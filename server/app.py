@@ -66,5 +66,107 @@ def most_expensive_baked_good():
     )
     return response
 
+@app.route('/baked_goods', methods=['GET', 'POST'])
+def create_baked_good():
+    if request.method == 'POST':
+        # Retrieve data from the request form
+        name = request.form.get('name')
+        price = request.form.get('price')
+        bakery_id = request.form.get('bakery_id')  # Assuming you have a field for bakery_id in the form
+
+        # Create a new BakedGood object and add it to the database
+        baked_good = BakedGood(name=name, price=price, bakery_id=bakery_id)
+        db.session.add(baked_good)
+        db.session.commit()
+
+        # Create a custom response with the newly created baked good's data as JSON
+        baked_good_data = {
+            "id": baked_good.id,
+            "name": baked_good.name,
+            "price": baked_good.price,
+            "bakery_id": baked_good.bakery_id
+        }
+
+        response = make_response(jsonify(baked_good_data), 201)  # 201 Created status code
+        return response
+
+    # Handle GET requests to retrieve baked goods (you can customize this part as needed)
+    baked_goods = BakedGood.query.all()
+    baked_goods_list = [{"id": baked_good.id, "name": baked_good.name, "price": baked_good.price} for baked_good in baked_goods]
+
+    response = make_response(jsonify(baked_goods_list))
+    return response
+
+
+
+@app.route('/bakeries/<int:id>', methods=['GET', 'PATCH'])
+def update_bakery(id):
+    bakery = Bakery.query.get(id)
+
+    if bakery is None:
+        return jsonify({"message": "Bakery not found"}), 404  # Custom status code for "Not Found"
+
+    if request.method == 'PATCH':
+        # Retrieve data from the request form
+        new_name = request.form.get('name')
+
+        # Update the bakery's name in the database
+        bakery.name = new_name
+        db.session.commit()
+
+        # Return the updated bakery's data as JSON
+        bakery_data = {
+            "id": bakery.id,
+            "name": bakery.name,
+            "created_at": bakery.created_at,
+            "updated_at": bakery.updated_at
+        }
+
+        response = make_response(jsonify(bakery_data))
+        return response
+
+    # Handle GET requests to retrieve bakery data (you can customize this part as needed)
+    bakery_data = {
+        "id": bakery.id,
+        "name": bakery.name,
+        "created_at": bakery.created_at,
+        "updated_at": bakery.updated_at
+    }
+
+    response = make_response(jsonify(bakery_data))
+    return response
+
+
+@app.route('/baked_goods/<int:id>', methods=['GET', 'DELETE'])
+def delete_baked_good(id):
+    baked_good = BakedGood.query.get(id)
+
+    if baked_good is None:
+        return jsonify({"message": "Baked good not found"}), 404  # Custom status code for "Not Found"
+
+    if request.method == 'DELETE':
+        # Delete the baked good from the database
+        db.session.delete(baked_good)
+        db.session.commit()
+
+        # Return a JSON message confirming the deletion
+        response_data = {"message": f"Baked good with ID {id} has been deleted."}
+        response = make_response(jsonify(response_data))
+        return response
+
+    # Handle GET requests to retrieve baked good data (you can customize this part as needed)
+    baked_good_data = {
+        "id": baked_good.id,
+        "name": baked_good.name,
+        "price": baked_good.price,
+        "created_at": baked_good.created_at,
+        "updated_at": baked_good.updated_at,
+        "bakery_id": baked_good.bakery_id
+    }
+
+    response = make_response(jsonify(baked_good_data))
+    return response
+
+
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
